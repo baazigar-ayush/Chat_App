@@ -11,7 +11,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.baazigar.typer.Models.Users;
-import com.baazigar.typer.databinding.ActivitySignUpBinding;
+import com.baazigar.typer.databinding.ActivitySignInBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -19,6 +19,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -26,26 +27,27 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.FirebaseDatabase;
 
-public class SignUpActivity extends AppCompatActivity {
+public class SignInActivity extends AppCompatActivity {
 
-    ActivitySignUpBinding binding;
-    private FirebaseAuth mAuth;
-    FirebaseDatabase mFirebaseDatabase;
+    ActivitySignInBinding binding;
     ProgressDialog dialog;
+    private FirebaseAuth mAuth;
     GoogleSignInClient mGoogleSignInClient;
+    FirebaseDatabase mDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivitySignUpBinding.inflate(getLayoutInflater());
+        binding = ActivitySignInBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         getSupportActionBar().hide();
+
         mAuth = FirebaseAuth.getInstance();
-        mFirebaseDatabase = FirebaseDatabase.getInstance();
-        dialog = new ProgressDialog(SignUpActivity.this);
-        dialog.setTitle("Creating Account");
-        dialog.setMessage("We're creating your account");
+        mDatabase = FirebaseDatabase.getInstance();
+        dialog = new ProgressDialog(SignInActivity.this);
+        dialog.setTitle("Login");
+        dialog.setMessage("Login to your account");
 
         // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -55,29 +57,20 @@ public class SignUpActivity extends AppCompatActivity {
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        if (mAuth.getCurrentUser() != null) {
-            Intent i = new Intent(getApplicationContext(),MainActivity.class);
-            startActivity(i);
-            finish();
-        }
-
-        binding.btnSignUp.setOnClickListener(new View.OnClickListener() {
+        binding.btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 dialog.show();
-                mAuth.createUserWithEmailAndPassword(binding.etEmail.getText().toString(),binding.etPassword.getText().toString())
+                mAuth.signInWithEmailAndPassword(binding.etEmailSignIn.getText().toString(),binding.etPasswordSignIn.getText().toString())
                         .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 dialog.dismiss();
                                 if (task.isSuccessful()) {
-                                    Users users = new Users(binding.etUsername.getText().toString(),binding.etEmail.getText().toString(),
-                                            binding.etPassword.getText().toString());
+                                    Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+                                    startActivity(intent);
+                                    finish();
 
-                                    String id = task.getResult().getUser().getUid();
-                                    mFirebaseDatabase.getReference().child("Users").child(id).setValue(users);
-
-                                    Toast.makeText(getApplicationContext(),"User Created Successfully",Toast.LENGTH_LONG).show();
                                 } else {
                                     Toast.makeText(getApplicationContext(),task.getException().getMessage(),Toast.LENGTH_LONG).show();
                                 }
@@ -86,10 +79,10 @@ public class SignUpActivity extends AppCompatActivity {
             }
         });
 
-        binding.haveAccount.setOnClickListener(new View.OnClickListener() {
+        binding.clickSignUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent i = new Intent(getApplicationContext(),SignInActivity.class);
+                Intent i = new Intent(getApplicationContext(),SignUpActivity.class);
                 startActivity(i);
             }
         });
@@ -101,8 +94,13 @@ public class SignUpActivity extends AppCompatActivity {
             }
         });
 
-    }
+        if (mAuth.getCurrentUser() != null) {
+            Intent i = new Intent(getApplicationContext(),MainActivity.class);
+            startActivity(i);
+            finish();
+        }
 
+    }
 
     int RC_SIGN_IN = 65;
     private void signIn() {
@@ -145,7 +143,7 @@ public class SignUpActivity extends AppCompatActivity {
                             users.setUserId(user.getUid());
                             users.setUserName(user.getDisplayName());
                             users.setProfilePic(user.getPhotoUrl().toString());
-                            mFirebaseDatabase.getReference().child("Users").child(user.getUid()).setValue(users);
+                            mDatabase.getReference().child("Users").child(user.getUid()).setValue(users);
 
                             Intent intent = new Intent(getApplicationContext(),MainActivity.class);
                             startActivity(intent);
